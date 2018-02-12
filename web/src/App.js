@@ -6,19 +6,26 @@ import './styles/css/styles.css';
 
 class App extends Component {
 
-	constructor() {
-		super()
+	constructor(props) {
+		super(props)
 		this.state = {
 			songs: [],
 			songNumber:1,
 			currentSong:"thebeatles",
-			paused:false
+			playing:true
 		};
 		this.ws = new Sockette('ws://localhost:8080', {
 			timeout: 5e3,
 			maxAttempts: 5,
 			onopen: e => console.log('Connected!', e),
-			onmessage: e => console.log('Received:', e),
+			onmessage: e => {
+				// console.log("Recieved!", e)
+				let obj = JSON.parse(e.data)
+				console.log("Recieved!", obj);
+				this.setState({playing:obj.playing})
+				obj.title && this.setState({currentSong:obj.title})
+				console.log("state!", this.state);
+			},
 			onreconnect: e => console.log('Reconnecting...', e),
 			onclose: e => console.log('Closed!', e),
 			onerror: e => console.log('Error:', e)
@@ -28,6 +35,13 @@ class App extends Component {
 	logHello() {
 		console.log("hey");
 	}
+
+	sendAction(action) {
+		this.ws.json({action});
+	}
+
+	
+
 	
 
 	render() {
@@ -44,13 +58,14 @@ class App extends Component {
 						</div>
 						<PlaybackControls
 							isPlayable={true}
-							isPlaying={this.state.paused}
+							isPlaying={this.state.playing}
 							onPlaybackChange={() => {
-								if (this.state.paused) {
-									this.setState({paused:false})
-									this.ws.send("hello")
+								if (this.state.playing) {
+									// this.setState({playing:false});
+									this.sendAction("pause")
 								} else {
-									this.setState({paused:true})
+									// this.setState({playing:true});
+									this.sendAction("play")
 								}
 							}}
 							showPrevious={true}

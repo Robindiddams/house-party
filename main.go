@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/faiface/beep"
@@ -13,23 +14,79 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type state struct {
+	Playing bool   `json:"playing"`
+	Title   string `json:"title"`
+}
+
+type control struct {
+	Action string `json:"action"`
+	Meta   string `json:"meta"`
+}
+
+// var connDex = make(map[string]*websocket.Conn)
+var generalState state
+
+// var conMux sync.Mutex
+
+func parseControl(c control) {
+	fmt.Println("data is good:", c.Action)
+	switch c.Action {
+	case "pause":
+		generalState.Playing = false
+	case "play":
+		generalState.Playing = true
+	default:
+	}
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("incomming connection")
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println("normal err", err)
+		fmt.Println("normal err", err)
 		return
 	}
+	fmt.Println("connection established", conn.RemoteAddr().String())
+	// connDex[conn.RemoteAddr().String()] = conn
+	fmt.Println("writing state")
+
+	err = conn.WriteJSON(generalState)
+	if err != nil {
+		fmt.Println("error writing to connection", err)
+	}
+
+	// detect changes to state and update
+	go func() {
+		oldState := generalState
+		for {
+			if oldState.Playing != generalState.Playing {
+				fmt.Println("updating state...", oldState.Playing, generalState.Playing)
+				err := conn.WriteJSON(generalState)
+				if err != nil {
+					if strings.Contains(err.Error(), "use of closed network connection") {
+						return
+					}
+					fmt.Println("error writing to connection", err)
+				}
+				oldState = generalState
+			}
+		}
+	}()
 	for {
-		messageType, p, err := conn.ReadMessage()
+		var c control
+		err = conn.ReadJSON(&c)
+		fmt.Println("incomming data")
 		if err != nil {
-			log.Println("read err", err)
+			if err.Error() == "websocket: close 1006 (abnormal closure): unexpected EOF" {
+				// fmt.Println("removing conn", len(connDex))
+				conn.Close()
+				return
+			}
+			fmt.Println("read err", err)
 			return
 		}
-		fmt.Println(string(p))
-		if err := conn.WriteMessage(messageType, p); err != nil {
-			log.Println("write err", err)
-			return
-		}
+		parseControl(c)
 	}
 }
 
@@ -42,6 +99,8 @@ var upgrader = websocket.Upgrader{
 }
 
 func main() {
+	generalState.Playing = false
+	generalState.Title = "cannabis"
 	fmt.Println("starting")
 	http.HandleFunc("/", handler)
 	// http.HandleFunc("/", home)
@@ -65,6 +124,7 @@ func play() {
 		close(done)
 	}))}
 	speaker.Play(ctrl)
+
 	time.AfterFunc(time.Second*3, func() {
 		speaker.Lock()
 		ctrl.Paused = true
