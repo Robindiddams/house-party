@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './styles/css/indes.css';
+import './styles/css/styles.css';
 import App from './App';
 import registerServiceWorker from './registerServiceWorker';
 

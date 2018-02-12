@@ -1,2 +1,4 @@
 web/node_modules
 web/build
+.vscode
+web/src/styles/css

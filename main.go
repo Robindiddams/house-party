@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"html/template"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -10,24 +10,42 @@ import (
 	"github.com/faiface/beep"
 	"github.com/faiface/beep/mp3"
 	"github.com/faiface/beep/speaker"
+	"github.com/gorilla/websocket"
 )
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println("normal err", err)
+		return
+	}
+	for {
+		messageType, p, err := conn.ReadMessage()
+		if err != nil {
+			log.Println("read err", err)
+			return
+		}
+		fmt.Println(string(p))
+		if err := conn.WriteMessage(messageType, p); err != nil {
+			log.Println("write err", err)
+			return
+		}
+	}
+}
+
+func checkorigin(r *http.Request) bool {
+	return true
+}
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: checkorigin,
+}
 
 func main() {
 	fmt.Println("starting")
 	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
-}
-
-func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("method:", r.Method) //get request method
-	if r.Method == "GET" {
-		t, _ := template.ParseFiles("page.gtpl")
-		t.Execute(w, nil)
-	} else {
-		r.ParseForm()
-		// logic part of log in
-		fmt.Println("url:", r.Form["url"])
-	}
+	// http.HandleFunc("/", home)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 func play() {
