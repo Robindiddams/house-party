@@ -12,7 +12,8 @@ class App extends Component {
 			songs: [],
 			songNumber:1,
 			currentSong:"thebeatles",
-			playing:true
+			playing:true,
+			url:""
 		};
 		this.ws = new Sockette('ws://localhost:8080', {
 			timeout: 5e3,
@@ -30,6 +31,8 @@ class App extends Component {
 			onclose: e => console.log('Closed!', e),
 			onerror: e => console.log('Error:', e)
 		});
+
+		this.handleChange = this.handleChange.bind(this);
 	}
 
 	logHello() {
@@ -40,12 +43,30 @@ class App extends Component {
 		this.ws.json({action});
 	}
 
-	
+	handleChange(event) {
+		const url = event.target.value
+		this.setState({url});
+		if (this.ValidURL(url)) {
+			console.log("valid");
+			this.ws.json({action:"queue", meta: url})
+		}
+	}
 
-	
+	ValidURL(url) {
+		if (url !== undefined || url !== '') {
+			var regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\?v=)([^#\&\?]*).*/;
+			var match = url.match(regExp);
+			if (match && match[2].length === 11) {
+				return true
+			}
+			else {
+				return false
+			}
+		}
+}
+
 
 	render() {
-
 		return (
 			<div className="site-container">
 				<header className="site-header">
@@ -56,26 +77,31 @@ class App extends Component {
 						<div className="song-text">
 							<h1>{this.state.currentSong}</h1>
 						</div>
-						<PlaybackControls
-							isPlayable={true}
-							isPlaying={this.state.playing}
-							onPlaybackChange={() => {
-								if (this.state.playing) {
-									// this.setState({playing:false});
-									this.sendAction("pause")
-								} else {
-									// this.setState({playing:true});
-									this.sendAction("play")
-								}
-							}}
-							showPrevious={true}
-							hasPrevious={this.state.songNumber > 0}
-							onPrevious={this.logHello}
-							showNext={true}
-							hasNext={this.state.songNumber < 5}
-							onNext={this.logHello}
-							/>
+						<div className="stack-center">
+							<PlaybackControls
+								isPlayable={true}
+								isPlaying={this.state.playing}
+								onPlaybackChange={() => {
+									if (this.state.playing) {
+										// this.setState({playing:false});
+										this.sendAction("pause")
+									} else {
+										// this.setState({playing:true});
+										this.sendAction("play")
+									}
+								}}
+								showPrevious={true}
+								hasPrevious={this.state.songNumber > 0}
+								onPrevious={this.logHello}
+								showNext={true}
+								hasNext={this.state.songNumber < 5}
+								onNext={this.logHello}
+								/>
+							</div>
+						<div class="url-paste-box">
+							<input type="text" class="Input-text" value={this.state.url} onChange={this.handleChange} placeholder="paste a url here"/>
 						</div>
+					</div>
 				</div>
 			</div>
 		);

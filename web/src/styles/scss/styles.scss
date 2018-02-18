@@ -16,30 +16,6 @@ body {
   font-family: $font;
 }
 
-// .App {
-//   text-align: center;
-// }
-
-// .App-logo {
-//   animation: App-logo-spin infinite 20s linear;
-//   height: 80px;
-// }
-
-// .App-header {
-//   background-color: #222;
-//   height: 150px;
-//   padding: 20px;
-//   color: white;
-// }
-
-// .App-title {
-//   font-size: 1.5em;
-// }
-
-// .App-intro {
-//   font-size: large;
-// }
-
 // @keyframes App-logo-spin {
 //   from { transform: rotate(0deg); }
 //   to { transform: rotate(360deg); }
@@ -78,6 +54,22 @@ body {
   flex: 2;
 }
 
+.Input-text {
+  display: block;
+  margin: 0;
+  padding: 10;
+  color: inherit;
+  width: 100%;
+  font-family: inherit;
+  font-size: var(--inputFontSize);
+  font-weight: inherit;
+  line-height: var(--inputLineHeight);
+  border: none;
+  border-radius: 0.4rem;
+  transition: box-shadow var(--transitionDuration);
+}
+
+
 //
 // Typography
 //
@@ -108,6 +100,17 @@ body {
 	justify-content: center;
 }
 
+.stack-center {
+  display: flex;
+	justify-content: center;
+}
+
+.url-paste-box {
+	display: flex;
+  justify-content: center;
+  padding-top: 10px
+}
+
 .site-title-text {
   display: inline-block;
 	vertical-align: middle;
@@ -122,73 +125,12 @@ body {
   }
 }
 
-.external-nav {
-  flex: 1;
-  line-height: 48px;
-  text-align: right;
-
-  a {
-    color: $gray;
-
-    &:hover {
-      color: $black;
-    }
-  }
-}
-
-h5 {
-  // margin-bottom: 1em;
-  font-size: 0.75em;
-  font-weight: normal;
-  color: $gray;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-a {
-  color: $blue;
-  text-decoration: none;
-
-  &:hover {
-    color: saturate(lighten($blue, 30%), 20%);
-  }
-}
 
 pre,
 code {
   font-family: Monaco, Consolas, "Liberation Mono", Menlo, Courier, monospace !important;
 }
 
-//
-// Sidebar / navigation
-//
-
-nav,
-menu {
-  ul,
-  li {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-}
-
-.site-sidebar {
-
-}
-
-.site-nav {
-  line-height: 2;
-  font-size: 12px;
-
-  ul {
-    margin-bottom: 1em;
-  }
-
-  a {
-    display: inline-block;
-  }
-}
 
 //
 // Page content
@@ -274,21 +216,6 @@ menu {
       content: 'Results';
     }
   }
-}
-
-
-//
-// Footer
-//
-
-.site-footer {
-  width: 100%;
-  margin-top: 60px;
-  padding: 20px 0 0;
-  border-top: 1px solid #eee;
-  font-size: 12px;
-  text-align: center;
-  color: $gray;
 }
 
 

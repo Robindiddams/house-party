@@ -10,52 +10,81 @@ import (
 	"github.com/faiface/beep/speaker"
 )
 
-func control() {
-	f, err := os.Open("dogsong.mp3")
-	check(err)
-	s, format, err := mp3.Decode(f)
-	check(err)
-
-	f, err = os.Open("ohmy.mp3")
-	check(err)
-	s2, fmt2, err := mp3.Decode(f)
-	check(err)
-
-	fmt.Println(s.Len(), s2.Len())
-	fmt.Println(format.SampleRate, fmt2.SampleRate)
-	fmt.Println(s.Len()/format.SampleRate.N(time.Second), s2.Len()/fmt2.SampleRate.N(time.Second))
-
-	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
-	done := make(chan struct{})
-	ctrl := &beep.Ctrl{Streamer: beep.Seq(s, beep.Callback(func() {
-		close(done)
-	}))}
-	speaker.Play(ctrl)
-
-	time.AfterFunc(time.Second*3, func() {
-		speaker.Lock()
-		ctrl.Paused = true
-		fmt.Println(s.Len())
-		speaker.Unlock()
-	})
-	time.AfterFunc(time.Second*4, func() {
-		speaker.Lock()
-		fmt.Println(s.Len())
-		ctrl.Paused = false
-		speaker.Unlock()
-	})
-
-	time.AfterFunc(time.Second*10, func() {
-		speaker.Lock()
-		ctrl.Streamer = beep.Seq(s2, ctrl.Streamer)
-		fmt.Println(s.Len())
-		speaker.Unlock()
-	})
-	<-done
+// Sound can be played, Paused and data pulled out
+type Sound struct {
+	Duration int
+	Name     string
+	Filepath string
+	Burn     int
+	ctrl     *beep.Ctrl
 }
 
-func check(err error) {
+// Play sound
+func (s *Sound) Play() {
+	speaker.Lock()
+	fmt.Println("playing", s.ctrl.Paused)
+	if s.ctrl.Paused {
+		s.ctrl.Paused = false
+	}
+	speaker.Unlock()
+}
+
+// Pause sound
+func (s *Sound) Pause() {
+	speaker.Lock()
+	fmt.Println("pausing")
+	if !s.ctrl.Paused {
+		s.ctrl.Paused = true
+	}
+	speaker.Unlock()
+}
+
+// OpenSound will mint a sound struct from a filename
+// you must give it a callback to call when it finishes playing
+func OpenSound(filename string, callback func()) (*Sound, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	return OpenSoundFile(f, callback)
+}
+
+// OpenSoundFile will mint a sound struct from an os.file
+// you must give it a callback to call when it finishes playing
+func OpenSoundFile(f *os.File, callback func()) (*Sound, error) {
+	s, format, err := mp3.Decode(f)
+	if err != nil {
+		return nil, err
+	}
+	d := s.Len() / format.SampleRate.N(time.Second)
+	ctrl := &beep.Ctrl{Streamer: beep.Seq(s, beep.Callback(callback))}
+	song := Sound{
+		Duration: d,
+		Name:     f.Name(),
+		Burn:     0,
+		ctrl:     ctrl,
+	}
+	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
+	song.ctrl.Paused = true
+	speaker.Play(song.ctrl)
+	return &song, nil
+}
+
+// Control will test
+func Control() {
+	s, err := OpenSound("dogsong.mp3", func() {
+		fmt.Println("done")
+	})
 	if err != nil {
 		panic(err)
 	}
+	s.Play()
+
+	time.AfterFunc(time.Second*1, func() {
+		s.Pause()
+	})
+
+	time.AfterFunc(time.Second*2, func() {
+		s.Play()
+	})
 }

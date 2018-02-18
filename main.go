@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Ch3ck/youtube-dl/api"
 	"github.com/gorilla/websocket"
 )
 
@@ -19,20 +20,40 @@ type control struct {
 	Meta   string `json:"meta"`
 }
 
-// var connDex = make(map[string]*websocket.Conn)
 var generalState state
 
-// var conMux sync.Mutex
+var controlChan chan (control)
 
-func parseControl(c control) {
-	fmt.Println("data is good:", c.Action)
-	switch c.Action {
-	case "pause":
-		generalState.Playing = false
-	case "play":
-		generalState.Playing = true
-	default:
+func processControl() {
+	for c := range controlChan {
+		fmt.Println("data is good:", c.Action)
+		switch c.Action {
+		case "pause":
+			generalState.Playing = false
+		case "play":
+			generalState.Playing = true
+		case "queue":
+			fmt.Println("got a url", c.Meta)
+			err := downloadSong(c.Meta)
+			if err != nil {
+				fmt.Println(err)
+			}
+		default:
+		}
 	}
+}
+
+func downloadSong(url string) error {
+	fmt.Println("there", url)
+	ID, err := api.GetVideoId(url)
+	if err != nil {
+		return err
+	}
+	err = api.APIGetVideoStream("mp3", ID, "/tmp/", 192)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +102,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("read err", err)
 			return
 		}
-		parseControl(c)
+		controlChan <- c
 	}
 }
 
@@ -93,8 +114,13 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: checkorigin,
 }
 
+func startChannels() {
+	controlChan = make(chan control)
+	go processControl()
+}
+
 func main() {
-	// player.control()
+	startChannels()
 
 	generalState.Playing = false
 	generalState.Title = "cannabis"

@@ -6,6 +6,7 @@
     "react": "^16.2.0",
     "react-dom": "^16.2.0",
     "react-list": "^0.8.8",
+    "react-player-controls": "^0.5.18",
     "react-scripts": "1.1.1",
     "socket.io-client": "^2.0.4",
     "sockette": "^1.2.0"
