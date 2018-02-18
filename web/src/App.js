@@ -10,10 +10,11 @@ class App extends Component {
 		super(props)
 		this.state = {
 			songs: [],
-			songNumber:1,
+			hasNext: true,
 			currentSong:"thebeatles",
 			playing:true,
-			url:""
+			url:"",
+			connected:false
 		};
 		this.ws = new Sockette('ws://localhost:8080', {
 			timeout: 5e3,
@@ -27,17 +28,20 @@ class App extends Component {
 				obj.title && this.setState({currentSong:obj.title})
 				console.log("state!", this.state);
 			},
-			onreconnect: e => console.log('Reconnecting...', e),
-			onclose: e => console.log('Closed!', e),
+			onreconnect: e => {
+				console.log('Reconnecting...', e)
+			},
+			onclose: e => {
+				console.log('Closed!', e)
+				this.setState({connected:false})
+			},
 			onerror: e => console.log('Error:', e)
 		});
 
+		this.sendAction = this.sendAction.bind(this);
 		this.handleChange = this.handleChange.bind(this);
 	}
 
-	logHello() {
-		console.log("hey");
-	}
 
 	sendAction(action) {
 		this.ws.json({action});
@@ -48,7 +52,9 @@ class App extends Component {
 		this.setState({url});
 		if (this.ValidURL(url)) {
 			console.log("valid");
+			//do login here to show what song it is
 			this.ws.json({action:"queue", meta: url})
+			this.setState({url:""})
 		}
 	}
 
@@ -90,12 +96,12 @@ class App extends Component {
 										this.sendAction("play")
 									}
 								}}
-								showPrevious={true}
-								hasPrevious={this.state.songNumber > 0}
-								onPrevious={this.logHello}
+								showPrevious={false}
 								showNext={true}
-								hasNext={this.state.songNumber < 5}
-								onNext={this.logHello}
+								hasNext={this.state.hasNext}
+								onNext={() => {
+									this.sendAction("next")
+								}}
 								/>
 							</div>
 						<div class="url-paste-box">

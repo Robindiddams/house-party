@@ -53,15 +53,9 @@ func processControl() {
 			fmt.Println("got a url", c.Meta)
 			fetchChan <- c.Meta
 		case "next":
-			fmt.Println("going to next song")
 			//TODO: tell the frontend to spinner here
 
 			if len(generalState.SongQueue) > 0 {
-				// good theres a song in the tank!
-				// if song != nil {
-				// 	//song isn't nil, stop that sukka!
-				// 	player.Pause()
-				// }
 				song, generalState.SongQueue = generalState.SongQueue[0], generalState.SongQueue[1:]
 				generalState.Title = song.Name
 				player.Play(song)
@@ -160,10 +154,6 @@ var upgrader = websocket.Upgrader{
 }
 
 func startChannels() {
-	// controlChan = make(chan control, 100)
-	// fetchChan = make(chan string, 100)
-	// soundChan = make(chan *player.Sound, 100)
-
 	go processControl()
 	go downloadSongs()
 }
@@ -173,7 +163,6 @@ func main() {
 
 	player.RegisterStopHandler(func() {
 		// when the song completes tell the player to move on
-		fmt.Println("song end")
 		controlChan <- control{Action: "next"}
 	})
 	generalState.Playing = false
