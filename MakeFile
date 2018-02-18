@@ -1,0 +1,10 @@
+# CC=gcc
+# CFLAGS=-I.
+# DEPS = hellomake.h
+
+
+all: 
+	echo "hi"
+
+react:
+	@cd web && npm i && npm run build

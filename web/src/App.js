@@ -1,13 +1,14 @@
 import React, { Component } from 'react';
 import Sockette from 'sockette';
-import logo from './logo.svg';
-import { PlaybackControls, PauseButton } from 'react-player-controls'
+import { PlaybackControls } from 'react-player-controls'
 import './styles/css/styles.css';
 
 class App extends Component {
 
 	constructor(props) {
 		super(props)
+		const s = 'ws://' + window.location.hostname + ':8080/sock' //use for dev
+		// const s = 'ws://' + window.location.host + 'sock' //use for prod
 		this.state = {
 			songs: [],
 			hasNext: true,
@@ -16,7 +17,7 @@ class App extends Component {
 			url:"",
 			connected:false
 		};
-		this.ws = new Sockette('ws://localhost:8080', {
+		this.ws = new Sockette(s, {
 			timeout: 5e3,
 			maxAttempts: 5,
 			onopen: e => console.log('Connected!', e),
@@ -26,7 +27,7 @@ class App extends Component {
 				console.log("Recieved!", obj);
 				this.setState({playing:obj.playing})
 				obj.title && this.setState({currentSong:obj.title})
-				console.log("state!", this.state);
+				// console.log("state!", this.state);
 			},
 			onreconnect: e => {
 				console.log('Reconnecting...', e)
@@ -35,7 +36,9 @@ class App extends Component {
 				console.log('Closed!', e)
 				this.setState({connected:false})
 			},
-			onerror: e => console.log('Error:', e)
+			onerror: e => {
+				// console.log('Error:', e)
+			}
 		});
 
 		this.sendAction = this.sendAction.bind(this);
@@ -44,7 +47,9 @@ class App extends Component {
 
 
 	sendAction(action) {
-		this.ws.json({action});
+		if (this.state.connected) {
+			this.ws.json({action});
+		}
 	}
 
 	handleChange(event) {
@@ -104,8 +109,8 @@ class App extends Component {
 								}}
 								/>
 							</div>
-						<div class="url-paste-box">
-							<input type="text" class="Input-text" value={this.state.url} onChange={this.handleChange} placeholder="paste a url here"/>
+						<div className="url-paste-box">
+							<input type="text" className="Input-text" value={this.state.url} onChange={this.handleChange} placeholder="paste a url here"/>
 						</div>
 					</div>
 				</div>

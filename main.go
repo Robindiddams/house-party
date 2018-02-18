@@ -158,17 +158,22 @@ func startChannels() {
 	go downloadSongs()
 }
 
+func startServer() {
+	http.HandleFunc("/sock", handler)
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
 func main() {
 	startChannels()
-
 	player.RegisterStopHandler(func() {
 		// when the song completes tell the player to move on
 		controlChan <- control{Action: "next"}
 	})
+
+	// init the state
 	generalState.Playing = false
 	generalState.Title = "nothing"
-	fmt.Println("starting")
-	http.HandleFunc("/", handler)
-	// http.HandleFunc("/", home)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+
+	// start server
+	startServer()
 }
