@@ -28,6 +28,7 @@ func DownloadMp3(url string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("downloading:", url)
 	cmd := exec.Command("youtube-dl", "--prefer-ffmpeg", "-x", "--audio-format", "mp3", url)
 	b := bytes.Buffer{}
 	cmd.Stdout = &b
@@ -36,6 +37,7 @@ func DownloadMp3(url string) (*os.File, error) {
 		// fmt.Println(b.String())
 		return nil, fmt.Errorf("Failed to download/extract: %v", err)
 	}
+	fmt.Println("download successfull")
 
 	// extract filename
 	re := regexp.MustCompile(`\[ffmpeg\]\sDestination:\s(.*)\.mp3\s`)

@@ -2,89 +2,89 @@ package player
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
-	"time"
+	"strings"
 
-	"github.com/faiface/beep"
-	"github.com/faiface/beep/mp3"
-	"github.com/faiface/beep/speaker"
+	mplayer "github.com/robindiddams/go-mplayer"
 )
 
 // Sound can be played, Paused and data pulled out
 type Sound struct {
-	Duration int
-	Name     string
-	Filepath string
-	Burn     int
-	ctrl     *beep.Ctrl
+	Name string
+	Path string
 }
 
-// Play sound
-func (s *Sound) Play() {
-	speaker.Lock()
-	fmt.Println("playing", s.ctrl.Paused)
-	if s.ctrl.Paused {
-		s.ctrl.Paused = false
-	}
-	speaker.Unlock()
+func init() {
+	mplayer.StartSlave()
+}
+
+// Play plays a song from the beginning
+func Play(song *Sound) {
+	mplayer.SendCommand(fmt.Sprintf("loadfile %s", song.Path))
+}
+
+// Resume sound
+func Resume() {
+	fmt.Println("resuming")
+	mplayer.Paused = false
+	mplayer.SendCommand("pause")
 }
 
 // Pause sound
-func (s *Sound) Pause() {
-	speaker.Lock()
+func Pause() {
 	fmt.Println("pausing")
-	if !s.ctrl.Paused {
-		s.ctrl.Paused = true
-	}
-	speaker.Unlock()
+	mplayer.Paused = true
+	mplayer.SendCommand("pause")
 }
 
-// OpenSound will mint a sound struct from a filename
-// you must give it a callback to call when it finishes playing
-func OpenSound(filename string, callback func()) (*Sound, error) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	return OpenSoundFile(f, callback)
+func RegisterStopHandler(callback func()) {
+	mplayer.RegisterStopHandler(callback)
 }
 
-// OpenSoundFile will mint a sound struct from an os.file
+// NewSound will mint a sound struct from a filename
 // you must give it a callback to call when it finishes playing
-func OpenSoundFile(f *os.File, callback func()) (*Sound, error) {
-	s, format, err := mp3.Decode(f)
+func NewSound(file *os.File) (*Sound, error) {
+	path, err := catalogueSong(file)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error cataloguing file %s", err.Error())
 	}
-	d := s.Len() / format.SampleRate.N(time.Second)
-	ctrl := &beep.Ctrl{Streamer: beep.Seq(s, beep.Callback(callback))}
+
+	// fmt.Println(path)
 	song := Sound{
-		Duration: d,
-		Name:     f.Name(),
-		Burn:     0,
-		ctrl:     ctrl,
+		Path: path,
 	}
-	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
-	song.ctrl.Paused = true
-	speaker.Play(song.ctrl)
+	arr := strings.Split(path, ".mp3")
+	if len(arr) == 2 {
+		song.Name = strings.Replace(arr[1], "_", " ", -1)
+	}
+
 	return &song, nil
 }
 
-// Control will test
-func Control() {
-	s, err := OpenSound("dogsong.mp3", func() {
-		fmt.Println("done")
-	})
+func catalogueSong(f *os.File) (string, error) {
+	//put song in temp dir and return where it is
+	name := f.Name()
+	name = strings.Replace(name, " ", "_", -1)
+	newhome, err := ioutil.TempFile("", name)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	s.Play()
-
-	time.AfterFunc(time.Second*1, func() {
-		s.Pause()
-	})
-
-	time.AfterFunc(time.Second*2, func() {
-		s.Play()
-	})
+	defer newhome.Close()
+	_, err = io.Copy(newhome, f)
+	if err != nil {
+		return "", err
+	}
+	// if we ever have a db register the path here
+	err = f.Close()
+	if err != nil {
+		return "", err
+	}
+	err = os.Remove(f.Name())
+	if err != nil {
+		return "", err
+	}
+	name = newhome.Name()
+	return name, nil
 }
