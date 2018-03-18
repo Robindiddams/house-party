@@ -12,42 +12,57 @@ let mpvPlayer = new mpv({
 	'audio_only': true,
 });
 
-let playing = false;
+let status = {
+	playing: false,
+	title:null,
+	length:0,
+	volume:0,
+};
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../../web/build')));
 
+mpvPlayer.on('statuschange', s => {
+	console.log(s);
+	status.title = s['media-title'];
+	status.length = s.duration;
+	status.volume = s.volume;
+});
 // Put all API endpoints under '/api'
 app.post('/api/action', (req, res) => {
-	console.log(`got this ${JSON.stringify(req.body)}`);
+	console.log(`got this ${JSON.stringify(req.body)}\n${req.host}`);
 	// req.body.action 
-	let state = {};
+	// let state = {};
 	switch (req.body.action) {
 	case 'play': 
-		if (!playing) {
+		if (!status.playing) {
 			console.log('playing');
 			mpvPlayer.play();
-			playing = true;
+			status.playing = true;
 		}
 		break;
 	case 'pause': 
-		if (playing) {
+		if (status.playing) {
 			console.log('pausing');
 			mpvPlayer.pause();
-			playing = false;
+			status.playing = false;
 		}
 		break;
 	case 'queue': 
 		console.log('queueing');
-		mpvPlayer.load(req.body.meta);
-		playing = true;
+		mpvPlayer.append(req.body.meta, 'append-play');
+		status.playing = true;
+		break;
+	case 'next': 
+		console.log('skipping');
+		mpvPlayer.next();
+		status.playing = true;
 		break;
 	default : 
-		console.log('i hope this works');
+		// console.log('ping?');
 		break;
 	}
-	state.playing = playing;
-	res.status(200).send(state);	
+	res.status(200).send(status);	
 });
 
 // The 'catchall' handler: for any request that doesn't

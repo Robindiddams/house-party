@@ -13,12 +13,28 @@ class App extends Component {
 			currentSong:"thebeatles",
 			playing:true,
 			url:"",
-			connected:false
+			connected:false,
+			started:false,
 		};
 		console.log(window.location)
 		this.sendJson = this.sendJson.bind(this);
 		this.handleChange = this.handleChange.bind(this);
 		this.playbackControl = this.playbackControl.bind(this);
+	}
+
+	componentDidMount() {
+		setInterval( () => {
+			this.sendJson({action:'ping'})
+			.then(resp => {
+				this.setState({
+					playing:resp.playing,
+					currentSong:resp.title,
+				});
+				if (resp.playing) {
+					this.setState({started: true});
+				}
+			});
+		},3000)
 	}
 
 	sendJson(body) {
@@ -29,8 +45,8 @@ class App extends Component {
 			headers: {
 				'content-type': 'application/json'
 			},
-			method: 'POST', // *GET, POST, PUT, DELETE, etc.
-			redirect: 'follow', // *manual, follow, error
+			method: 'POST',
+			redirect: 'follow',
 		})
 		.then(response => {
 			return response.json();
@@ -51,8 +67,11 @@ class App extends Component {
 		this.setState({playing:!this.state.playing})
 		this.sendJson({action:playstr}).then(resp => {
 			console.log(resp);
-			if (resp.playing !== undefined) {
-				this.setState({playing:resp.playing})
+			if (resp !== undefined) {
+				this.setState({
+					playing:resp.playing,
+					currentSong:resp.title,
+				});
 			}
 		});
 	}
@@ -99,7 +118,7 @@ class App extends Component {
 						</div>
 						<div className="stack-center">
 							<PlaybackControls
-								isPlayable={true}
+								isPlayable={this.state.started}
 								isPlaying={this.state.playing}
 								onPlaybackChange={this.playbackControl}
 								showPrevious={false}
