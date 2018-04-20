@@ -23,7 +23,7 @@ let status = {
 app.use(express.static(path.join(__dirname, '../../web/build')));
 
 mpvPlayer.on('statuschange', s => {
-	console.log(s);
+	// console.log(s);
 	status.title = s['media-title'];
 	status.length = s.duration;
 	status.volume = s.volume;
@@ -74,4 +74,4 @@ app.get('*', (req, res) => {
 const port = process.env.PORT || 5000;
 app.listen(port);
 
-console.log(`Password generator listening on ${port}`);
+console.log(`React server listening on ${port}`);
